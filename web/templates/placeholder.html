@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{{template "partials/head" .}}
+
+<body
+    class="bg-surface-light-secondary dark:bg-surface-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-300 font-sans antialiased selection:bg-primary-500 selection:text-white"
+    x-data x-cloak>
+
+    {{template "partials/auth_overlay" .}}
+    {{template "partials/nav" .}}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div class="flex flex-col items-center justify-center min-h-[60vh]">
+            <!-- Feature Preview Card -->
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md shadow-soft border border-slate-200/60 dark:border-slate-800 max-w-2xl w-full p-8 text-center">
+
+                <!-- Icon -->
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
+                    :class="'{{if .BusinessOnly}}bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400{{else}}bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400{{end}}'">
+                    {{if eq .FeatureName "Applications"}}
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    {{else if eq .FeatureName "File Manager"}}
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    {{else if eq .FeatureName "System Services"}}
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {{else}}
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {{end}}
+                </div>
+
+                <!-- Title -->
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-3">{{.FeatureName}}</h1>
+
+                <!-- Badge -->
+                {{if .ComingSoon}}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 mb-4">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Coming Soon
+                </span>
+                {{else if .BusinessOnly}}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 mb-4">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Business Edition
+                </span>
+                {{end}}
+
+                <!-- Description -->
+                <p class="text-slate-600 dark:text-slate-400 mb-6">{{.Description}}</p>
+
+                <!-- Features List -->
+                {{if .Features}}
+                <div class="text-left bg-slate-50 dark:bg-surface-dark-tertiary rounded-md p-6 mb-6">
+                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">What's Included</h3>
+                    <ul class="space-y-3">
+                        {{range .Features}}
+                        <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-slate-600 dark:text-slate-400">{{.}}</span>
+                        </li>
+                        {{end}}
+                    </ul>
+                </div>
+                {{end}}
+
+                <!-- CTA -->
+                {{if .BusinessOnly}}
+                <a href="#"
+                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-md shadow-lg shadow-purple-500/30 transition-all">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Learn About Business Edition
+                </a>
+                {{else if .ComingSoon}}
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    This feature will be available in a future release of FleetCtrl Community Edition.
+                </p>
+                {{end}}
+            </div>
+
+            <!-- Back Link -->
+            <a href="/dashboard" class="mt-6 inline-flex items-center text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+        Powered by <a href="https://github.com/yourusername/fleetctrl" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">FleetCtrl</a> Community Edition
+    </footer>
+
+    {{template "partials/common_js" .}}
+</body>
+</html>

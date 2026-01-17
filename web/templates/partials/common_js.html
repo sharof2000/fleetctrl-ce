@@ -1,0 +1,52 @@
+{{define "partials/common_js"}}
+<script>
+    // Common functions available to all pages
+    window.FleetCtrl = window.FleetCtrl || {};
+
+    // Common Alpine.js data mixin for pages
+    window.FleetCtrl.commonData = function() {
+        return {
+            version: '',
+            showPasswordModal: false,
+            passwordForm: { current: '', new: '' },
+
+            async loadVersion() {
+                try {
+                    const data = await api.get('/api/version');
+                    this.version = data.version || 'dev';
+                } catch (e) {
+                    this.version = 'dev';
+                }
+            },
+
+            async changePassword() {
+                if (!this.passwordForm.current || !this.passwordForm.new) {
+                    Toast.error('Please fill in both password fields');
+                    return;
+                }
+                if (this.passwordForm.new.length < 8) {
+                    Toast.error('New password must be at least 8 characters');
+                    return;
+                }
+                try {
+                    await api.put('/api/settings/password', {
+                        current_password: this.passwordForm.current,
+                        new_password: this.passwordForm.new
+                    });
+                    this.showPasswordModal = false;
+                    this.passwordForm = { current: '', new: '' };
+                    Toast.success('Password changed successfully');
+                } catch (e) {
+                    Toast.error('Failed to change password: ' + e.message);
+                }
+            },
+
+            logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('tokenExpiry');
+                window.location.href = '/login';
+            }
+        };
+    };
+</script>
+{{end}}

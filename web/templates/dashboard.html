@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{{template "partials/head" .}}
+
+<body
+    class="bg-surface-light-secondary dark:bg-surface-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-300 font-sans antialiased selection:bg-primary-500 selection:text-white"
+    x-data="dashboardPage()" x-cloak>
+
+    {{template "partials/auth_overlay" .}}
+    {{template "partials/nav" .}}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-8">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 sm:mb-8 animate-fade-in">
+            <div>
+                <h1 class="text-3xl mb-2 font-bold text-slate-900 dark:text-white tracking-tight">Dashboard</h1>
+                <div class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                    <span
+                        class="flex items-center gap-1.5 bg-slate-100 dark:bg-surface-dark-tertiary px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700/50">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+                        </svg>
+                        <span>Hosts Overview</span>
+                    </span>
+                    <span class="text-slate-300 dark:text-slate-700 mx-1">|</span>
+                    <span>Last updated: <span x-text="lastUpdate" class="font-mono"></span></span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button @click="showAddHostModal = true"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-all focus:ring-2 focus:ring-primary-500/20 active:scale-95">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Host
+                </button>
+                <button @click="loadData"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium bg-white dark:bg-surface-dark-secondary text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50 dark:hover:bg-surface-dark-tertiary transition-all focus:ring-2 focus:ring-primary-500/20 active:scale-95">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <!-- Hosts Card -->
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md p-4 shadow-soft border border-slate-200/60 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-md flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white">
+                            <span x-text="onlineCount"></span>
+                            <span class="text-sm font-normal text-slate-400">/ <span x-text="totalCount"></span></span>
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Hosts Online</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Card -->
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md p-4 shadow-soft border border-slate-200/60 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-md flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white" x-text="avgCPU.toFixed(1) + '%'"></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Avg CPU Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md p-4 shadow-soft border border-slate-200/60 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-md flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white" x-text="avgMemory.toFixed(1) + '%'"></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Avg Memory Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disk Card -->
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md p-4 shadow-soft border border-slate-200/60 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-md flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white" x-text="avgDisk.toFixed(1) + '%'"></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Avg Disk Usage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <template x-if="loading">
+            <div class="text-center py-12">
+                <svg class="animate-spin w-8 h-8 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-3 text-slate-500 dark:text-slate-400">Loading hosts...</p>
+            </div>
+        </template>
+
+        <!-- No Hosts Message -->
+        <template x-if="!loading && hosts.length === 0">
+            <div class="bg-white dark:bg-surface-dark-secondary rounded-md p-12 shadow-soft border border-slate-200/60 dark:border-slate-800 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-surface-dark-tertiary rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">No Hosts Configured</h3>
+                <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                    Click "Add Host" to start monitoring your servers.
+                </p>
+                <button @click="showAddHostModal = true"
+                    class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-md font-medium shadow-lg shadow-primary-500/20 transition-all">
+                    Add Your First Host
+                </button>
+            </div>
+        </template>
+
+        <!-- Hosts List -->
+        <div class="space-y-4" x-show="hosts.length > 0">
+            <template x-for="host in hosts" :key="host.id">
+                <div class="bg-white dark:bg-surface-dark-secondary rounded-md shadow-soft hover:shadow-glow-sm hover:scale-[1.005] border border-slate-200/60 dark:border-slate-800 overflow-hidden transition-all duration-300"
+                    :class="host.status === 'online' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-rose-500'">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-md flex items-center justify-center"
+                                    :class="host.status === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-slate-900 dark:text-white" x-text="host.name"></span>
+                                        <span x-show="host.is_self" class="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs rounded">This Host</span>
+                                    </div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400" x-text="host.address"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-medium"
+                                    :class="host.status === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'"
+                                    x-text="host.status === 'online' ? 'Online' : 'Offline'">
+                                </span>
+                                <button @click="deleteHost(host.id)"
+                                    class="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-md transition-all"
+                                    title="Remove host">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Stats (only show if online) -->
+                        <template x-if="host.status === 'online' && host.stats">
+                            <div class="mt-4 grid grid-cols-3 gap-4">
+                                <!-- CPU -->
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-500 dark:text-slate-400">CPU</span>
+                                        <span class="font-medium" x-text="host.stats.cpu_percent.toFixed(1) + '%'"></span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-300"
+                                            :class="host.stats.cpu_percent < 70 ? 'bg-emerald-500' : (host.stats.cpu_percent < 90 ? 'bg-amber-500' : 'bg-rose-500')"
+                                            :style="'width: ' + host.stats.cpu_percent + '%'"></div>
+                                    </div>
+                                </div>
+                                <!-- Memory -->
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-500 dark:text-slate-400">Memory</span>
+                                        <span class="font-medium" x-text="host.stats.memory_percent.toFixed(1) + '%'"></span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-300"
+                                            :class="host.stats.memory_percent < 70 ? 'bg-emerald-500' : (host.stats.memory_percent < 90 ? 'bg-amber-500' : 'bg-rose-500')"
+                                            :style="'width: ' + host.stats.memory_percent + '%'"></div>
+                                    </div>
+                                </div>
+                                <!-- Disk -->
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-500 dark:text-slate-400">Disk</span>
+                                        <span class="font-medium" x-text="host.stats.disk_percent.toFixed(1) + '%'"></span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-300"
+                                            :class="host.stats.disk_percent < 70 ? 'bg-emerald-500' : (host.stats.disk_percent < 90 ? 'bg-amber-500' : 'bg-rose-500')"
+                                            :style="'width: ' + host.stats.disk_percent + '%'"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <!-- Add Host Modal -->
+    <div x-show="showAddHostModal" x-cloak
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+        @click.self="showAddHostModal = false">
+        <div class="bg-white dark:bg-surface-dark-secondary rounded-md shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Add Host</h3>
+            <form @submit.prevent="addHost">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Host Name</label>
+                        <input type="text" x-model="newHost.name" placeholder="My Server"
+                            class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-surface-dark-tertiary text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address (IP:Port)</label>
+                        <input type="text" x-model="newHost.address" placeholder="192.168.1.100:4060"
+                            class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-surface-dark-tertiary text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required>
+                    </div>
+                    <div x-show="addHostError" class="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-sm rounded-md" x-text="addHostError"></div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" @click="showAddHostModal = false"
+                        class="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="addingHost"
+                        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md font-medium transition-all disabled:opacity-50">
+                        <span x-show="!addingHost">Add Host</span>
+                        <span x-show="addingHost">Adding...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+        Powered by <a href="https://github.com/yourusername/fleetctrl" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">FleetCtrl</a> Community Edition
+    </footer>
+
+    {{template "partials/common_js" .}}
+
+    <script>
+        function dashboardPage() {
+            return {
+                hosts: [],
+                loading: true,
+                lastUpdate: '-',
+                showAddHostModal: false,
+                newHost: { name: '', address: '' },
+                addingHost: false,
+                addHostError: '',
+                eventSource: null,
+
+                get totalCount() {
+                    return this.hosts.length;
+                },
+
+                get onlineCount() {
+                    return this.hosts.filter(h => h.status === 'online').length;
+                },
+
+                get avgCPU() {
+                    const online = this.hosts.filter(h => h.status === 'online' && h.stats);
+                    if (online.length === 0) return 0;
+                    return online.reduce((sum, h) => sum + h.stats.cpu_percent, 0) / online.length;
+                },
+
+                get avgMemory() {
+                    const online = this.hosts.filter(h => h.status === 'online' && h.stats);
+                    if (online.length === 0) return 0;
+                    return online.reduce((sum, h) => sum + h.stats.memory_percent, 0) / online.length;
+                },
+
+                get avgDisk() {
+                    const online = this.hosts.filter(h => h.status === 'online' && h.stats);
+                    if (online.length === 0) return 0;
+                    return online.reduce((sum, h) => sum + h.stats.disk_percent, 0) / online.length;
+                },
+
+                async init() {
+                    await this.loadData();
+                    this.connectSSE();
+                },
+
+                async loadData() {
+                    this.loading = true;
+                    try {
+                        const response = await API.fetch('/api/hosts');
+                        const data = await response.json();
+                        this.hosts = data.hosts || [];
+                        this.lastUpdate = new Date().toLocaleTimeString();
+                    } catch (e) {
+                        console.error('Failed to load hosts:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                connectSSE() {
+                    const token = localStorage.getItem('token');
+                    this.eventSource = new EventSource('/api/dashboard/stream?token=' + encodeURIComponent(token));
+
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.hosts = data.hosts || [];
+                            this.lastUpdate = new Date().toLocaleTimeString();
+                        } catch (e) {
+                            console.error('SSE parse error:', e);
+                        }
+                    };
+
+                    this.eventSource.onerror = () => {
+                        this.eventSource.close();
+                        setTimeout(() => this.connectSSE(), 5000);
+                    };
+                },
+
+                async addHost() {
+                    this.addingHost = true;
+                    this.addHostError = '';
+
+                    try {
+                        const response = await API.fetch('/api/hosts', {
+                            method: 'POST',
+                            body: JSON.stringify(this.newHost)
+                        });
+
+                        if (response.ok) {
+                            this.showAddHostModal = false;
+                            this.newHost = { name: '', address: '' };
+                            await this.loadData();
+                        } else {
+                            const data = await response.json();
+                            this.addHostError = data.error || 'Failed to add host';
+                        }
+                    } catch (e) {
+                        this.addHostError = 'Connection error';
+                    } finally {
+                        this.addingHost = false;
+                    }
+                },
+
+                async deleteHost(id) {
+                    if (!confirm('Are you sure you want to remove this host?')) return;
+
+                    try {
+                        const response = await API.fetch('/api/hosts/' + id, { method: 'DELETE' });
+                        if (response.ok) {
+                            await this.loadData();
+                        }
+                    } catch (e) {
+                        console.error('Failed to delete host:', e);
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

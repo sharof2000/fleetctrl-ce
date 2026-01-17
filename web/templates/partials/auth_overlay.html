@@ -1,0 +1,14 @@
+{{define "partials/auth_overlay"}}
+<!-- Auth Loading Overlay - Hidden after auth verification -->
+<div id="auth-overlay" class="auth-overlay">
+    <div class="auth-overlay-content">
+        <svg class="auth-overlay-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="38" height="45" rx="6" fill="#60A5FA" />
+            <rect x="10" y="60" width="38" height="30" rx="6" fill="#BFDBFE" />
+            <rect x="53" y="10" width="37" height="30" rx="6" fill="#93C5FD" />
+            <rect x="53" y="45" width="37" height="45" rx="6" fill="#3B82F6" />
+        </svg>
+        <div class="auth-overlay-spinner"></div>
+    </div>
+</div>
+{{end}}

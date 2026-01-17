@@ -1,0 +1,66 @@
+{{define "partials/head"}}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCtrl - {{.Title}}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="/static/css/fonts.css" rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('fleetctrl-theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Auth loading overlay - visible by default, hidden after auth verified */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgb(248 250 252);
+        }
+        .dark .auth-overlay {
+            background-color: rgb(15 23 42);
+        }
+        .auth-overlay.auth-verified {
+            display: none;
+        }
+        .auth-overlay-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .auth-overlay-logo {
+            width: 4rem;
+            height: 4rem;
+        }
+        .auth-overlay-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 3px solid rgb(226 232 240);
+            border-top-color: rgb(59 130 246);
+            border-radius: 50%;
+            animation: auth-spin 0.8s linear infinite;
+        }
+        .dark .auth-overlay-spinner {
+            border-color: rgb(51 65 85);
+            border-top-color: rgb(59 130 246);
+        }
+        @keyframes auth-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script defer src="/static/js/alpine.min.js"></script>
+</head>
+{{end}}
