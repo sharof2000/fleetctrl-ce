@@ -1,0 +1,48 @@
+# Binaries
+fleetctrl
+fleetctrl.exe
+fleetctrl-*
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build tools
+tailwindcss.exe
+
+# Build output
+/dist/
+
+# Tailwind source (keep only the generated minified version)
+web/static/css/tailwind.src.css
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+coverage.out
+coverage.html
+
+# Dependency directories
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Config files (may contain secrets)
+config.yaml
+*.local.yaml
+
+# Logs
+*.log
+
+# Air live reload
+tmp/
