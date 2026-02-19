@@ -10,7 +10,9 @@ import (
 
 	"fleetctrl/internal/api"
 	"fleetctrl/internal/config"
+	"fleetctrl/internal/services/applications"
 	"fleetctrl/internal/services/auth"
+	"fleetctrl/internal/services/docker"
 	"fleetctrl/internal/services/hosts"
 	"fleetctrl/internal/services/monitor"
 	"fleetctrl/internal/services/timeseries"
@@ -85,6 +87,25 @@ func main() {
 	hostsService.Start()
 	defer hostsService.Stop()
 
+	// Initialize docker service
+	dockerService, err := docker.NewService()
+	if err != nil {
+		log.Printf("[main] Docker service: not available (%v)", err)
+	} else if dockerService.IsAvailable() {
+		log.Println("[main] Docker service: connected")
+	} else {
+		log.Println("[main] Docker service: not available (will retry automatically)")
+	}
+
+	// Initialize applications service
+	var appsService *applications.Manager
+	if cfg.Applications.Enabled {
+		appsService = applications.NewManager(cfg, dockerService)
+		log.Printf("[main] Applications service: enabled (path: %s)", cfg.Applications.Path)
+	} else {
+		log.Println("[main] Applications service: disabled")
+	}
+
 	// Detect local host and set it
 	localIP := utils.GetLocalIP()
 	localAddress := fmt.Sprintf("%s:%s", localIP, cfg.App.Port)
@@ -97,6 +118,8 @@ func main() {
 		monitorService,
 		hostsService,
 		timeseriesService,
+		dockerService,
+		appsService,
 		web.TemplateFiles,
 		web.StaticFiles,
 	)

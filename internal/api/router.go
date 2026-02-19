@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"fleetctrl/internal/config"
+	"fleetctrl/internal/services/applications"
 	"fleetctrl/internal/services/auth"
+	"fleetctrl/internal/services/docker"
 	"fleetctrl/internal/services/hosts"
 	"fleetctrl/internal/services/monitor"
 	"fleetctrl/internal/services/timeseries"
@@ -58,6 +60,8 @@ type Router struct {
 	monitorService    *monitor.Service
 	hostsService      *hosts.Service
 	timeseriesService *timeseries.Service
+	dockerService     *docker.Service
+	appsService       *applications.Manager
 	httpClient        *http.Client
 }
 
@@ -68,6 +72,8 @@ func NewRouter(
 	monitorService *monitor.Service,
 	hostsService *hosts.Service,
 	timeseriesService *timeseries.Service,
+	dockerService *docker.Service,
+	appsService *applications.Manager,
 	templateFiles embed.FS,
 	staticFiles embed.FS,
 ) *gin.Engine {
@@ -77,6 +83,8 @@ func NewRouter(
 		monitorService:    monitorService,
 		hostsService:      hostsService,
 		timeseriesService: timeseriesService,
+		dockerService:     dockerService,
+		appsService:       appsService,
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -128,6 +136,43 @@ func NewRouter(
 		// Local stats
 		api.GET("/local/stats", r.handleLocalStats)
 
+		// Docker status
+		api.GET("/local/docker/status", r.handleDockerStatus)
+		api.POST("/local/docker/reconnect", r.handleDockerReconnect)
+
+		// Containers
+		api.GET("/local/containers", r.handleListContainers)
+		api.POST("/local/containers/:id/start", r.handleStartContainer)
+		api.POST("/local/containers/:id/stop", r.handleStopContainer)
+		api.POST("/local/containers/:id/restart", r.handleRestartContainer)
+		api.GET("/local/containers/:id/logs", r.handleContainerLogs)
+		api.GET("/local/containers/:id/stats", r.handleContainerStats)
+		api.POST("/local/containers/stats/batch", r.handleBatchContainerStats)
+
+		// Applications
+		api.GET("/local/applications", r.handleListApplications)
+		api.GET("/local/applications/:name", r.handleGetApplication)
+		api.DELETE("/local/applications/:name", r.handleDeleteApplication)
+		api.GET("/local/applications/:name/backup", r.handleBackupApplication)
+		api.POST("/local/applications/deploy", r.handleGitDeploy)
+
+		// Application compose files
+		api.GET("/local/applications/:name/compose/*file", r.handleGetComposeFile)
+		api.PUT("/local/applications/:name/compose/*file", r.handleSaveComposeFile)
+		api.POST("/local/applications/:name/compose/start/*file", r.handleStartCompose)
+		api.POST("/local/applications/:name/compose/stop/*file", r.handleStopCompose)
+		api.POST("/local/applications/:name/compose/restart/*file", r.handleRestartCompose)
+		api.GET("/local/applications/:name/console/:action/*file", r.handleComposeOutput)
+
+		// Application service control
+		api.POST("/local/applications/:name/service/:service/start/*file", r.handleStartService)
+		api.POST("/local/applications/:name/service/:service/stop/*file", r.handleStopService)
+		api.POST("/local/applications/:name/service/:service/restart/*file", r.handleRestartService)
+
+		// Application env files
+		api.GET("/local/applications/:name/env", r.handleGetEnvFile)
+		api.PUT("/local/applications/:name/env", r.handleSaveEnvFile)
+
 		// Settings
 		api.PUT("/settings/password", r.handleChangePassword)
 	}
@@ -172,20 +217,10 @@ func (r *Router) handleDashboardPage(c *gin.Context) {
 }
 
 func (r *Router) handleApplicationsPage(c *gin.Context) {
-	// Coming Soon placeholder
-	c.HTML(http.StatusOK, "placeholder.html", gin.H{
-		"Title":       "Applications",
-		"ActivePage":  "applications",
-		"Edition":     "Community",
-		"FeatureName": "Applications",
-		"Description": "Manage Docker Compose applications with an intuitive interface.",
-		"ComingSoon":  true,
-		"Features": []string{
-			"Deploy and manage Docker Compose applications",
-			"Edit compose files and environment variables",
-			"View container logs and status",
-			"Start, stop, and restart services",
-		},
+	c.HTML(http.StatusOK, "applications.html", gin.H{
+		"Title":      "Applications",
+		"ActivePage": "applications",
+		"Edition":    "Community",
 	})
 }
 

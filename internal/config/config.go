@@ -16,11 +16,19 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	App       AppConfig       `yaml:"app"`
-	Database  DatabaseConfig  `yaml:"database"`
-	Dashboard DashboardConfig `yaml:"dashboard"`
-	Auth      AuthConfig      `yaml:"auth"`
-	Hosts     []HostConfig    `yaml:"hosts"`
+	App          AppConfig          `yaml:"app"`
+	Applications ApplicationsConfig `yaml:"applications"`
+	Database     DatabaseConfig     `yaml:"database"`
+	Dashboard    DashboardConfig    `yaml:"dashboard"`
+	Auth         AuthConfig         `yaml:"auth"`
+	Hosts        []HostConfig       `yaml:"hosts"`
+}
+
+// ApplicationsConfig holds applications feature settings
+type ApplicationsConfig struct {
+	Enabled          bool   `yaml:"enabled"`
+	Path             string `yaml:"path"`
+	GitDeployEnabled bool   `yaml:"git_deploy_enabled"`
 }
 
 // AppConfig holds application settings
@@ -113,6 +121,11 @@ func DefaultConfig() *Config {
 			Port:     "4060",
 			LogLevel: "info",
 		},
+		Applications: ApplicationsConfig{
+			Enabled:          true,
+			Path:             defaultApplicationsPath(),
+			GitDeployEnabled: false,
+		},
 		Database: DatabaseConfig{
 			Enabled: true,
 			Path:    defaultDatabasePath(),
@@ -150,6 +163,11 @@ func (c *Config) Validate() error {
 
 	if c.App.LogLevel == "" {
 		c.App.LogLevel = "info"
+	}
+
+	// Applications config validation
+	if c.Applications.Path == "" {
+		c.Applications.Path = defaultApplicationsPath()
 	}
 
 	// Database config validation
@@ -336,6 +354,15 @@ func defaultDatabasePath() string {
 		return "./fleetctrl.db"
 	}
 	return filepath.Join(filepath.Dir(execPath), "fleetctrl.db")
+}
+
+// defaultApplicationsPath returns the applications path relative to the executable
+func defaultApplicationsPath() string {
+	execPath, err := os.Executable()
+	if err != nil {
+		return "./applications"
+	}
+	return filepath.Join(filepath.Dir(execPath), "applications")
 }
 
 // GenerateRandomToken generates a random hex token of specified byte length
