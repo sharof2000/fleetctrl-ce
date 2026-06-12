@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -185,6 +187,16 @@ func (s *Service) GetContainerLogs(id string, tail string) (string, error) {
 		return "", err
 	}
 
+	// Inspect the container to determine if its stdio is multiplexed (non-TTY)
+	// or a raw stream (TTY=true). The Docker logs endpoint returns 8-byte
+	// stdcopy frame headers for non-TTY containers, which must be stripped
+	// before the caller sees the payload.
+	info, err := s.client.ContainerInspect(s.ctx, id)
+	if err != nil {
+		return "", err
+	}
+	multiplexed := info.Config == nil || !info.Config.Tty
+
 	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -198,12 +210,35 @@ func (s *Service) GetContainerLogs(id string, tail string) (string, error) {
 	}
 	defer reader.Close()
 
-	logs, err := io.ReadAll(reader)
-	if err != nil {
-		return "", err
+	if !multiplexed {
+		logs, err := io.ReadAll(reader)
+		if err != nil {
+			return "", err
+		}
+		return string(logs), nil
 	}
 
-	return string(logs), nil
+	// Demultiplex Docker stdcopy frames: 8-byte header (stream type + length)
+	// followed by payload. Merge stdout and stderr in receive order.
+	var buf bytes.Buffer
+	header := make([]byte, 8)
+	for {
+		_, err := io.ReadFull(reader, header)
+		if err != nil {
+			break
+		}
+		frameSize := binary.BigEndian.Uint32(header[4:8])
+		if frameSize == 0 {
+			continue
+		}
+		payload := make([]byte, frameSize)
+		if _, err := io.ReadFull(reader, payload); err != nil {
+			break
+		}
+		buf.Write(payload)
+	}
+
+	return buf.String(), nil
 }
 
 func formatPorts(ports []types.Port) []string {

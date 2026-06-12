@@ -2,6 +2,16 @@
 
 A lightweight, cross-platform host monitoring application with a modern web interface. Monitor multiple hosts from a single dashboard with real-time metrics and historical data.
 
+## Screenshots
+
+| Dashboard (light) | Dashboard (dark) |
+|-------------------|------------------|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Dashboard dark](docs/screenshots/dashboard-dark.png) |
+| **Applications** | **Container logs** |
+| ![Applications](docs/screenshots/applications.png) | ![Container logs](docs/screenshots/logs.png) |
+| **Login** | |
+| ![Login](docs/screenshots/login.png) | |
+
 ## Features
 
 ### Host Monitoring
@@ -14,6 +24,15 @@ A lightweight, cross-platform host monitoring application with a modern web inte
 - **Historical data storage**: Persistent metrics using embedded BoltDB
 - **Multi-level aggregation**: Raw, minute, hour, and day aggregates
 - **Configurable retention**: Define how long to keep historical data
+
+### Applications (Docker Compose)
+- **Compose app management**: Deploy and control folder-based Docker Compose applications
+- **Lifecycle controls**: Start, stop, and restart stacks from the web UI
+- **Container monitoring & logs**: View container status and stream logs
+- **Environment editing**: Edit each application's `.env` directly in the UI
+
+> **Restart behavior:** "Restart" pulls the latest images and runs `up -d`, so new
+> image tags and `.env` changes take effect — it is not just a container bounce.
 
 ### Security
 - **JWT authentication**: Secure token-based authentication
@@ -123,25 +142,32 @@ dashboard:
 
 ## Roadmap
 
-FleetCtrl Community Edition is actively developed. Planned features include:
+FleetCtrl Community Edition is actively developed.
 
-### v1.1.0 - Applications
+### v1.1.0 - Applications (shipped)
 - Docker Compose application management
 - Container monitoring and logs
 - Environment variable editing
 
-### v1.2.0 - Files
+### v1.2.0 - Files (planned)
 - File manager for application directories
 - Configuration file editing with syntax highlighting
 - Log file viewing
 
 ## Business Edition
 
-For advanced features, check out FleetCtrl Business Edition:
+FleetCtrl Business Edition builds on the Community Edition with features for teams
+running larger, multi-host fleets:
 
-- **System Services**: Manage system services (systemd, Windows Services)
-- **Multi-Cluster**: Organize hosts into clusters with P2P sync
+- **Multi-Cluster**: Organize hosts into clusters with peer-to-peer config sync
 - **SSO**: Single sign-on across all hosts in a cluster
+- **Multi-User & Roles**: Multiple accounts with role-based access control
+- **System Services**: Manage system services (systemd, Windows Services)
+- **Health Checks**: Pluggable health-check scripts with status and metrics
+- **Audit Logging**: Track user and system actions for forensics and compliance
+- **Outbound Exporters**: Ship metrics to a central monitoring hub (e.g. Grafana)
+- **Docker Swarm & Stacks**: Manage Swarm services and stacks
+- **File Manager**: Browse and edit application files with syntax highlighting
 - **Priority Support**: Direct support channel
 
 Contact us for more information about Business Edition licensing.

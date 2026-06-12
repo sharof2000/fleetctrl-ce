@@ -2,11 +2,14 @@ package applications
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"syscall"
 	"time"
 
 	"fleetctrl/internal/config"
@@ -14,6 +17,34 @@ import (
 	"fleetctrl/internal/services/compose"
 	"fleetctrl/internal/services/docker"
 )
+
+// composeNameInvalid matches characters Docker Compose strips when deriving a
+// project name from a directory.
+var composeNameInvalid = regexp.MustCompile(`[^a-z0-9_-]`)
+
+// normalizeProjectName mirrors how Docker Compose derives a project name from a
+// directory: lowercase, drop characters outside [a-z0-9_-], trim leading separators.
+// Folder "MyApp" -> "myapp", matching the com.docker.compose.project label.
+func normalizeProjectName(s string) string {
+	s = strings.ToLower(s)
+	s = composeNameInvalid.ReplaceAllString(s, "")
+	return strings.TrimLeft(s, "_-")
+}
+
+// wrapWriteErr returns a more actionable error when a write fails because the
+// path is on a read-only mount as seen by this process. EROFS is distinct from
+// EACCES: it indicates the mount itself (or the systemd/container namespace
+// view of it) is read-only, even if the on-disk perms would allow the write.
+func wrapWriteErr(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, syscall.EROFS) {
+		return fmt.Errorf("cannot write %s: path is on a read-only mount as seen by fleetctrl "+
+			"(check systemd ProtectHome/ReadOnlyPaths on the unit, or a :ro container volume): %w", path, err)
+	}
+	return err
+}
 
 // Manager handles application deployment and lifecycle
 type Manager struct {
@@ -215,9 +246,10 @@ func (m *Manager) getProjectContainers(projectName string) []models.Container {
 		return nil
 	}
 
+	target := normalizeProjectName(projectName)
 	var result []models.Container
 	for _, c := range containers {
-		if c.Project == projectName {
+		if normalizeProjectName(c.Project) == target {
 			result = append(result, c)
 		}
 	}
@@ -325,7 +357,10 @@ func (m *Manager) SaveComposeFile(appName, fileName, content string) error {
 		return fmt.Errorf("invalid compose file name")
 	}
 
-	return os.WriteFile(filePath, []byte(content), 0644)
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		return wrapWriteErr(err, filePath)
+	}
+	return nil
 }
 
 // GetEnvFile returns the content of the .env file
@@ -346,7 +381,25 @@ func (m *Manager) GetEnvFile(appName string) (string, error) {
 // SaveEnvFile saves content to the .env file
 func (m *Manager) SaveEnvFile(appName, content string) error {
 	filePath := filepath.Join(m.config.Applications.Path, appName, ".env")
-	return os.WriteFile(filePath, []byte(content), 0644)
+
+	// Use explicit open/write/sync/close to ensure data is flushed to disk
+	// before docker compose reads the file.
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return wrapWriteErr(err, filePath)
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write env file: %w", err)
+	}
+
+	// Force flush to disk to ensure compose reads the new values.
+	if err := f.Sync(); err != nil {
+		return fmt.Errorf("failed to sync env file: %w", err)
+	}
+
+	return nil
 }
 
 // StartCompose starts a specific compose file

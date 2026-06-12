@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
@@ -54,9 +55,14 @@ func (s *Service) ComposeRestart(applicationPath string) error {
 	return s.runCompose(applicationPath, "", "restart")
 }
 
-// ComposeRestartFile runs docker compose restart with a specific compose file
+// ComposeRestartFile pulls the latest images then runs `up -d` so that any
+// image-tag or env changes since the last start take effect. Plain
+// `docker compose restart` would only bounce existing containers.
 func (s *Service) ComposeRestartFile(appPath, composeFile string) error {
-	return s.runCompose(appPath, composeFile, "restart")
+	if err := s.runCompose(appPath, composeFile, "pull"); err != nil {
+		return err
+	}
+	return s.runCompose(appPath, composeFile, "up", "-d")
 }
 
 // ComposePull runs docker compose pull in the specified directory
@@ -117,6 +123,13 @@ func (s *Service) runCompose(applicationPath, composeFile string, args ...string
 		fullArgs = append([]string{"compose"}, args...)
 	}
 
+	// Add --env-file flag if .env file exists to ensure compose reads fresh values
+	envPath := filepath.Join(applicationPath, ".env")
+	if _, err := os.Stat(envPath); err == nil {
+		// Insert --env-file after compose command
+		fullArgs = append([]string{fullArgs[0], "--env-file", ".env"}, fullArgs[1:]...)
+	}
+
 	cmd := exec.Command("docker", fullArgs...)
 	cmd.Dir = filepath.Clean(applicationPath)
 
@@ -132,25 +145,45 @@ func (s *Service) runCompose(applicationPath, composeFile string, args ...string
 	return nil
 }
 
-// RunComposeWithOutput runs a docker compose command and streams output via callback
-// action can be: up, stop, restart, down, pull
+// RunComposeWithOutput runs a docker compose command and streams output via callback.
+// action can be: up, stop, restart, down, pull. "restart" is special-cased to run
+// `pull` followed by `up -d` so image-tag and env changes are picked up.
 func (s *Service) RunComposeWithOutput(appPath, composeFile, action string, outputFn func(line string)) error {
 	if err := s.checkAvailable(); err != nil {
 		return err
 	}
 
+	if action == "restart" {
+		if err := s.runComposeStreamed(appPath, composeFile, outputFn, "pull"); err != nil {
+			return err
+		}
+		return s.runComposeStreamed(appPath, composeFile, outputFn, "up", "-d")
+	}
+
+	args := []string{action}
+	if action == "up" {
+		args = append(args, "-d")
+	}
+	return s.runComposeStreamed(appPath, composeFile, outputFn, args...)
+}
+
+// runComposeStreamed executes a single `docker compose ...` invocation and
+// streams stdout+stderr line-by-line through outputFn. It injects --env-file .env
+// when present so fresh env values are read on every call.
+func (s *Service) runComposeStreamed(appPath, composeFile string, outputFn func(line string), args ...string) error {
 	var fullArgs []string
 
 	// Build the compose command
 	if composeFile != "" {
-		fullArgs = append([]string{"compose", "-f", composeFile}, action)
+		fullArgs = append([]string{"compose", "-f", composeFile}, args...)
 	} else {
-		fullArgs = append([]string{"compose"}, action)
+		fullArgs = append([]string{"compose"}, args...)
 	}
 
-	// Add flags based on action
-	if action == "up" {
-		fullArgs = append(fullArgs, "-d")
+	// Add --env-file flag if .env file exists to ensure compose reads fresh values
+	envPath := filepath.Join(appPath, ".env")
+	if _, err := os.Stat(envPath); err == nil {
+		fullArgs = append([]string{fullArgs[0], "--env-file", ".env"}, fullArgs[1:]...)
 	}
 
 	cmd := exec.Command("docker", fullArgs...)
